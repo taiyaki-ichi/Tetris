@@ -27,7 +27,7 @@ let getStanderdMinoPoints (minotype:MinoType) =
     | MinoType.ZMino -> [{x=0;y=0}; { x=1;y=0}; {x=0;y=1}; {x= -1;y=1}]
     | _ -> []
 
-//rotの回数分、(0,0)を中心にpointを回転
+//rotの回数分、(0,0)を中心にpointをπ/2回転
 let rec rotationPoint (rot:int) point = 
     let rotation point = {x = -point.y ; y = point.x} 
     match rot%4 with
@@ -83,8 +83,7 @@ let checkLine (field:Point List) (line:int) =
             elif point.y < line then point::acc
             else acc
         List.foldBack foldFunc field []
-    else
-        field
+    else field
 
 type TetrisForm = class 
     inherit Form
@@ -96,6 +95,7 @@ type TetrisForm = class
     val mTimer : Timer
     val mutable mTetris : Tetris
 
+    //コンストラクタ
     new () as this = 
         {inherit Form(); 
         mFieldColor = new SolidBrush(Color.FromArgb(255,50,50,50)); 
@@ -104,7 +104,6 @@ type TetrisForm = class
         mFrameCnt = 0; 
         mTimer = new Timer(); 
         mTetris = {mino = getNewMino(); field = []} } then
-
             this.SetStyle(ControlStyles.AllPaintingInWmPaint,true)
             this.Text <- "Tetris"
             this.MinimumSize <- this.Size
@@ -114,11 +113,9 @@ type TetrisForm = class
     override this.OnPaint (e:PaintEventArgs) =
         let g = e.Graphics
         g.Clear(Color.White)
-
         //フィールドの描写
         List.map (drawBlock g this.mFieldColor) (this.mTetris.field) |> ignore
         List.map (drawBlock g this.mMinoColor) (getMinoPoints this.mTetris.mino) |> ignore
-
         //枠の描写
         let x = WindowWidth / 2 - FieldWidth / 2 * BlockSize
         let y = WindowHeigth / 2 - FieldHeight / 2 * BlockSize
@@ -136,11 +133,11 @@ type TetrisForm = class
             this.mFrameCnt <- 0
             let movedMino = updateMino this.mTetris MoveBottom
 
-            //ミノがもう下に移動することができない場合
+            //ミノの下がフィールドの端またはブロックであり、下に移動できない場合
             if movedMino.pos.y = this.mTetris.mino.pos.y then
-                //消せるかを確認する必要のある行が示されているリスト
+                //ミノが置かれた行のリスト、すなわち消せるかどうかを確認する必要のある行が示されているリスト
                 let checkLineNums = List.map (fun p->p.y) (getMinoPoints this.mTetris.mino) |> List.distinct
-                //一行ずつ消せるかチェックし、消せるなら処理
+                //一行ずつ消せるかチェック
                 let nextField = List.fold checkLine ((getMinoPoints this.mTetris.mino) @ this.mTetris.field) checkLineNums
                 let newMino = getNewMino()
 
@@ -156,6 +153,7 @@ type TetrisForm = class
         //再描写
         this.Invalidate()
        
+
     override this.OnKeyDown (e:KeyEventArgs) =
         match e.KeyCode with
         | Keys.Space -> this.mTetris <- {mino=updateMino this.mTetris Rotation; field=this.mTetris.field}
