@@ -27,14 +27,14 @@ let getStanderdMinoPoints (minotype:MinoType) =
     | MinoType.ZMino -> [{x=0;y=0}; { x=1;y=0}; {x=0;y=1}; {x= -1;y=1}]
     | _ -> []
 
-//rotの回数分、回転
+//rotの回数分、(0,0)を中心にpointを回転
 let rec rotationPoint (rot:int) point = 
     let rotation point = {x = -point.y ; y = point.x} 
     match rot%4 with
     | 0 -> point
     | a -> rotationPoint (a-1) (rotation point)
 
-let movePoint (move:Point) point = {x = move.x + point.x ; y=move.y+point.y}
+let movePoint (move:Point) point = {x = move.x + point.x ; y = move.y + point.y}
 
 let getMinoPoints (mino:Mino) = 
     List.map (rotationPoint mino.rot) (getStanderdMinoPoints mino.minoType) |> List.map (movePoint mino.pos)
