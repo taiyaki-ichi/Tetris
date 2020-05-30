@@ -41,8 +41,8 @@ let getMinoPoints (mino:Mino) =
 
 //あるpointがフィールドの内側であり、また、すでに使用されていないかチェック
 let isValidPoint (field:Point List) point =
-    if point.x<0 || FieldWidth-1 < point.x then false
-    elif point.y<0 || FieldHeight-1 < point.y then false
+    if point.x < 0 || FieldWidth-1 < point.x then false
+    elif point.y < 0 || FieldHeight-1 < point.y then false
     elif List.exists (fun p->p.x=point.x&&p.y=point.y) field then false
     else true
 
@@ -101,9 +101,9 @@ type TetrisForm = class
         mFieldColor = new SolidBrush(Color.FromArgb(255,50,50,50)); 
         mMinoColor = new SolidBrush(Color.FromArgb(255,100,100,100));
         mLinePen = new Pen(Color.Black);
-        mFrameCnt=0; 
-        mTimer=new Timer(); 
-        mTetris={mino=getNewMino(); field=[]} } then
+        mFrameCnt = 0; 
+        mTimer = new Timer(); 
+        mTetris = {mino = getNewMino(); field = []} } then
 
             this.SetStyle(ControlStyles.AllPaintingInWmPaint,true)
             this.Text <- "Tetris"
@@ -139,8 +139,9 @@ type TetrisForm = class
             //ミノがもう下に移動することができない場合
             if movedMino.pos.y = this.mTetris.mino.pos.y then
                 //消せるかを確認する必要のある行が示されているリスト
-                let checkLines = List.map (fun p->p.y) (getMinoPoints this.mTetris.mino) |> List.distinct
-                let nextField = List.fold checkLine ((getMinoPoints this.mTetris.mino) @ this.mTetris.field) checkLines
+                let checkLineNums = List.map (fun p->p.y) (getMinoPoints this.mTetris.mino) |> List.distinct
+                //一行ずつ消せるかチェックし、消せるなら処理
+                let nextField = List.fold checkLine ((getMinoPoints this.mTetris.mino) @ this.mTetris.field) checkLineNums
                 let newMino = getNewMino()
 
                 //新しいミノが置けない場合ゲームオーバー、リセット
