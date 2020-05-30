@@ -6,8 +6,8 @@ open System.Drawing
 let WindowWidth=720
 let WindowHeigth=640
 let FieldWidth=10
-let FieldHeight=20
-let BlockSize=30
+let FieldHeight=24
+let BlockSize=25
 let FPS=60
 
 type Point = {x:int ; y:int}
@@ -18,14 +18,16 @@ type Tetris = {mino:Mino; field:Point List}
 
 let getStanderdMinoPoints (minotype:MinoType) = 
     match minotype with
-    | MinoType.IMino -> [{x=0;y=0};{ x=0;y=1};{x=0;y= -1};{x=0;y= -2}]
-    | MinoType.OMIno -> [{x=0;y=0};{ x=0;y=1};{x=1;y=1};{x=1;y=0}]
-    | MinoType.TMino -> [{x=0;y=0};{ x= -1;y=0};{x=1;y=0};{x=0;y=1}]
-    | MinoType.JMino -> [{x=0;y=0};{ x=0;y=1};{x=0;y= -1};{x= -1;y= -1}]
-    | MinoType.LMino -> [{x=0;y=0};{ x=0;y=1};{x=0;y= -1};{x=1;y= -1}]
-    | MinoType.SMino -> [{x=0;y=0};{ x= -1;y=0};{x=0;y=1};{x=1;y=1}]
-    | MinoType.ZMino -> [{x=0;y=0};{ x=1;y=0};{x=0;y=1};{x= -1;y=1}]
+    | MinoType.IMino -> [{x=0;y=0}; { x=0;y=1}; {x=0;y= -1}; {x=0;y= -2}]
+    | MinoType.OMIno -> [{x=0;y=0}; { x=0;y=1}; {x=1;y=1}; {x=1;y=0}]
+    | MinoType.TMino -> [{x=0;y=0}; { x= -1;y=0}; {x=1;y=0}; {x=0;y=1}]
+    | MinoType.JMino -> [{x=0;y=0}; { x=0;y=1}; {x=0;y= -1}; {x= -1;y= -1}]
+    | MinoType.LMino -> [{x=0;y=0}; { x=0;y=1}; {x=0;y= -1}; {x=1;y= -1}]
+    | MinoType.SMino -> [{x=0;y=0}; { x= -1;y=0}; {x=0;y=1}; {x=1;y=1}]
+    | MinoType.ZMino -> [{x=0;y=0}; { x=1;y=0}; {x=0;y=1}; {x= -1;y=1}]
+    | _ -> []
 
+//rotの回数分、回転
 let rec rotationPoint (rot:int) point = 
     let rotation point = {x = -point.y ; y = point.x} 
     match rot%4 with
@@ -37,6 +39,7 @@ let movePoint (move:Point) point = {x = move.x + point.x ; y=move.y+point.y}
 let getMinoPoints (mino:Mino) = 
     List.map (rotationPoint mino.rot) (getStanderdMinoPoints mino.minoType) |> List.map (movePoint mino.pos)
 
+//あるpointの場所がフィールドの内側であり、また、すでに使用されていないかチェック
 let isValidPoint (field:Point List) point =
     if point.x<0||FieldWidth-1<point.x then false
     elif point.y<0||FieldHeight-1<point.y then false
@@ -54,27 +57,24 @@ let getActionedMino (mino:Mino) (action:MinoAction) =
     | Rotation -> {minoType=mino.minoType; pos={x=mino.pos.x; y=mino.pos.y}; rot=mino.rot+1}
     | None -> mino
    
+//Actionした後のミノが有効なら更新、有効でないならそのまま
 let updateMino (tetris:Tetris) (action:MinoAction) =
     let actionedMino = getActionedMino tetris.mino action
     if isValidMino tetris.field actionedMino then actionedMino
     else tetris.mino
 
-let rand = new System.Random ()
-let getNewMino () =
-    let num=rand.Next(7)
-    printfn "%d" num
-    {minoType=enum<MinoType>(rand.Next(7)); pos={x=FieldWidth/2; y=FieldHeight-2}; rot=0}
+let RandomDevice = new System.Random ()
+let getNewMino () = {minoType=enum<MinoType>(RandomDevice.Next(7)); pos={x=FieldWidth/2; y=FieldHeight-2}; rot=0}
     
-
-let initTetris () = 
-    {mino=getNewMino(); field=[]}
+let initTetris () = {mino=getNewMino(); field=[]}
 
 let drawBlock (graphics:Graphics) (solidBrush:SolidBrush) (p:Point) =
     let x = WindowWidth/2-FieldWidth/2*BlockSize+p.x*BlockSize
     let y = WindowHeigth/2+(FieldHeight/2-1)*BlockSize-p.y*BlockSize
     graphics.FillRectangle(solidBrush,x,y,BlockSize,BlockSize)
 
-let checkLine (field:Point List) (line:int)= 
+//指定された行が消せるなら処理、消せないならそのまま
+let checkLine (field:Point List) (line:int) = 
     let num = List.filter (fun p->p.y=line) field |> List.length
     if num>=FieldWidth then 
         let foldFunc point acc =
@@ -113,24 +113,35 @@ type TetrisForm = class
     override this.OnPaint (e:PaintEventArgs) =
         let g = e.Graphics
         g.Clear(Color.White)
+
+        //フィールドの描写
         List.map (drawBlock g this.mFieldColor) (this.mTetris.field) |> ignore
         List.map (drawBlock g this.mMinoColor) (getMinoPoints this.mTetris.mino) |> ignore
-        g.DrawRectangle(this.mLinePen,WindowWidth/2-FieldWidth/2*BlockSize,WindowHeigth/2-FieldHeight/2*BlockSize
-            ,FieldWidth*BlockSize,FieldHeight*BlockSize)
 
+        //枠の描写
+        g.DrawRectangle(this.mLinePen,WindowWidth/2-FieldWidth/2*BlockSize, WindowHeigth/2-FieldHeight/2*BlockSize
+            ,FieldWidth*BlockSize, FieldHeight*BlockSize)
+    
     override this.OnLoad (e:EventArgs) =
         this.mTimer.Elapsed.AddHandler(new ElapsedEventHandler(this.update))
+        //updateが一秒あたりに呼び出される回数
         this.mTimer.Interval <- 1.0/(float FPS)
         this.mTimer.Start()
        
     member this.update (sender:Object) (e:ElapsedEventArgs) =
         if this.mFrameCnt >= FPS then
+            //１秒ごとの処理
             this.mFrameCnt <- 0
             let movedMino = updateMino this.mTetris MoveBottom
+
+            //ミノがもう下に移動することができない場合
             if movedMino.pos.y = this.mTetris.mino.pos.y then
+                //消せるかを確認する必要のある行が示されているリスト
                 let checkLines = List.map (fun p->p.y) (getMinoPoints this.mTetris.mino) |> List.distinct
                 let nextField = List.fold checkLine ((getMinoPoints this.mTetris.mino) @ this.mTetris.field) checkLines
-                let newMino = {minoType=enum<MinoType>(rand.Next(7)); pos={x=FieldWidth/2; y=FieldHeight-2}; rot=0}
+                let newMino = getNewMino()
+
+                //新しいミノが置けない場合ゲームオーバー、リセット
                 if isValidMino nextField newMino then
                     this.mTetris <- {mino=newMino; field=nextField}
                 else
@@ -139,6 +150,7 @@ type TetrisForm = class
                 this.mTetris <- {mino=movedMino; field=this.mTetris.field}
         
         this.mFrameCnt <- this.mFrameCnt+1
+        //再描写
         this.Invalidate()
        
     override this.OnKeyDown (e:KeyEventArgs) =
