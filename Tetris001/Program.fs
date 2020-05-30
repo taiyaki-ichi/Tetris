@@ -65,8 +65,6 @@ let updateMino (tetris:Tetris) (action:MinoAction) =
 
 let RandomDevice = new System.Random ()
 let getNewMino () = {minoType=enum<MinoType>(RandomDevice.Next(7)); pos={x=FieldWidth/2; y=FieldHeight-2}; rot=0}
-    
-let initTetris () = {mino=getNewMino(); field=[]}
 
 let drawBlock (graphics:Graphics) (solidBrush:SolidBrush) (p:Point) =
     let x = WindowWidth/2-FieldWidth/2*BlockSize+p.x*BlockSize
@@ -102,7 +100,7 @@ type TetrisForm = class
         mLinePen = new Pen(Color.Black);
         mFrameCnt=0; 
         mTimer=new Timer(); 
-        mTetris=initTetris()} then
+        mTetris={mino=getNewMino(); field=[]} } then
 
             this.SetStyle(ControlStyles.AllPaintingInWmPaint,true)
             this.Text <- "Tetris"
